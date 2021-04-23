@@ -1,27 +1,33 @@
+"""
+Module comprising processing of DVS data files.
+
+@author: Dr. Paul Iacomi
+@date: Jan 2021
+"""
+
 import datetime
 import pathlib as pth
-
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-from matplotlib import pyplot as plt
 from itertools import cycle
+
+import numpy as np
+import pandas as pd
 import pygaps as pg
 import ruptures as rpt
 from dateutil import parser
+from matplotlib import pyplot as plt
 
-from ..common import pairwise
+from ..common import pairwise, plot_transient
 
 __all__ = [
     'read_dvs_file',
     'get_change_points',
     'get_change_points_rpt',
     'calc_isotherm_data',
-    'dvs_plot',
     'trim_meta',
     'get_loading',
     'remove_baseline',
     'get_act_T',
+    'dvs_plot',
 ]
 
 LP_BASELINES_PTH = pth.Path(
@@ -55,7 +61,7 @@ def read_dvs_file(path, offset=20):
                 break
 
     dvsdata = pd.read_csv(
-        path, encoding="cp1252", delimiter="\\t", skiprows=41
+        path, encoding="cp1252", delimiter="\\t", skiprows=41, engine='python'
     )
 
     dvsinfo['columns'] = dict(
@@ -169,94 +175,11 @@ def get_loading(iso_points, m0, c='loading'):
     return (iso_points[c] / m0 - 1)
 
 
-def dvs_plot(data, y1, y2, y3, y4):
-
-    fig = go.Figure()
-    fig.update_layout(template="simple_white")
-
-    # Add traces
-    fig.add_trace(
-        go.Scatter(x=data.index, y=data[y1], line=dict(color="blue"), name=y1)
+def dvs_plot(dvsinfo, dvsdata):
+    return plot_transient(
+        dvsdata,
+        dvsinfo['col']['mass'],
+        dvsinfo['col']['t_heat'],
+        dvsinfo['col']['p_abs'],
+        dvsinfo['col']['p_abs_tgt'],
     )
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data[y2],
-            line=dict(color="red"),
-            name=y2,
-            yaxis='y2'
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data[y3],
-            line=dict(color="black"),
-            name=y3,
-            yaxis='y3'
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data[y4],
-            line=dict(color="green"),
-            name=y4,
-            yaxis='y4'
-        )
-    )
-
-    # Set x-axis title
-    fig.update_xaxes(title_text="Time (min)", domain=[0.2, 0.8])
-
-    afs = 12
-
-    # Create y-axis objects
-    fig.update_layout(
-        yaxis=dict(
-            title=dict(text=y1, standoff=0),
-            titlefont=dict(color="blue", size=afs),
-            tickfont=dict(color="blue", size=afs),
-            # type='log'
-        ),
-        yaxis2=dict(
-            title=dict(text=y2, standoff=0),
-            titlefont=dict(color="red", size=afs),
-            tickfont=dict(color="red", size=afs),
-            anchor="free",
-            overlaying="y",
-            side="left",
-            position=0.1
-        ),
-        yaxis3=dict(
-            title=dict(text=y3, standoff=0),
-            titlefont=dict(color="black", size=afs),
-            tickfont=dict(color="black", size=afs),
-            anchor="x",
-            overlaying="y",
-            side="right"
-        ),
-        yaxis4=dict(
-            title=dict(text=y4, standoff=0),
-            titlefont=dict(color="green", size=afs),
-            tickfont=dict(color="green", size=afs),
-            anchor="free",
-            overlaying="y",
-            side="right",
-            position=0.925
-        ),
-    )
-
-    fig.update_layout(
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-        )
-    )
-
-    fig.update_layout(
-        autosize=True,
-        width=800,
-        margin=dict(l=10, r=10, b=10, t=20, pad=4),
-    )
-
-    return fig

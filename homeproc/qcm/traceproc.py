@@ -1,10 +1,31 @@
-import pandas as pd
-import numpy as np
+"""
+Module comprising processing of QCM traces and markers.
+
+@author: Dr. Paul Iacomi
+@date: Jan 2021
+"""
+
 import pathlib
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 from dateutil import parser
+from plotly.subplots import make_subplots
 from scipy.signal import find_peaks, peak_widths
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+
+__all__ = [
+    'read_tracefiles',
+    'read_markerfile',
+    'calc_tracedata',
+    'plot_qcm',
+    'FREQ_COL',
+    'WIDTH_COL',
+]
+
+FREQ_COL = "Resonance frequency [Hz]"
+WIDTH_COL = "Peak width [Hz]"
 
 
 def read_tracefiles(
@@ -31,15 +52,15 @@ def read_markerfile(file):
 
     if file.endswith(".txt"):
         markers = pd.read_csv(
-            file, names=['day', 'hour', 'm_freq'], delim_whitespace=True
+            file, names=['day', 'hour', FREQ_COL], delim_whitespace=True
         )
         markers['time'] = markers['day'] + ' ' + markers['hour']
-        markers = markers[['time', 'm_freq']].set_index(['time'])
+        markers = markers[['time', FREQ_COL]].set_index(['time'])
         markers.index = pd.to_datetime(markers.index)
 
     elif file.endswith(".csv"):
         markers = pd.read_csv(
-            file, names=['time', 'm_freq'], index_col='time', parse_dates=True
+            file, names=['time', FREQ_COL], index_col='time', parse_dates=True
         )
 
     return markers
@@ -68,8 +89,68 @@ def calc_tracedata(traces, pwidth=10, pheight=0.1):
             widths.append(0)
 
     trace_results = pd.DataFrame(
-        data=dict(t_freq=maxima, t_widths=widths),
+        data={
+            FREQ_COL: maxima,
+            WIDTH_COL: widths
+        },
         index=timestamps,
     )
 
     return trace_results
+
+
+def plot_qcm(markers, trace_results):
+
+    return go.Figure(
+        data=(
+            go.Scatter(
+                x=markers.index,
+                y=markers[FREQ_COL],
+                line=dict(color="black"),
+                name="marker freq",
+            ),
+            go.Scatter(
+                x=trace_results.index,
+                y=trace_results[FREQ_COL],
+                line=dict(color="green"),
+                name="trace freq",
+            ),
+            go.Scatter(
+                x=trace_results.index,
+                y=trace_results[WIDTH_COL],
+                line=dict(color="red"),
+                name="trace width",
+                yaxis='y2'
+            ),
+        ),
+        layout=dict(
+            template="simple_white",
+            autosize=True,
+            width=600,
+            margin=dict(l=10, r=10, b=10, t=20, pad=4),
+            xaxis=dict(
+                title_text="Time (min)",
+                domain=[0.1, 0.9],
+            ),
+            yaxis=dict(
+                title=dict(text=FREQ_COL, standoff=0),
+                titlefont=dict(color="green", size=12),
+                tickfont=dict(color="green", size=12),
+            ),
+            yaxis2=dict(
+                title=dict(text=WIDTH_COL, standoff=0),
+                titlefont=dict(color="red", size=12),
+                tickfont=dict(color="red", size=12),
+                anchor="x",
+                overlaying="y",
+                side="right"
+            ),
+            legend=dict(
+                orientation="h",
+                x=1,
+                y=1.02,
+                yanchor="bottom",
+                xanchor="right",
+            )
+        )
+    )

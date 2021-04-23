@@ -1,5 +1,5 @@
 """
-Module comprising processing of DVS data files.
+Module comprising processing of IDE scans.
 
 @author: Dr. Paul Iacomi
 @date: Jan 2021
@@ -7,5 +7,3 @@ Module comprising processing of DVS data files.
 # pylint: disable=W0614,W0611,W0622
 # flake8: noqa
 # isort:skip_file
-
-from .dvsproc import *

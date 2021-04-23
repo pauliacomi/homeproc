@@ -1,3 +1,14 @@
+"""
+Module comprising python utilities.
+
+@author: Dr. Paul Iacomi
+@date: Jan 2021
+"""
+
+__all__ = [
+    "pairwise",
+]
+
 from itertools import tee
 
 

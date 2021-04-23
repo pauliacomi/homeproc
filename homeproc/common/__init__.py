@@ -1,5 +1,5 @@
 """
-Module comprising processing of DVS data files.
+Module comprising general utilities.
 
 @author: Dr. Paul Iacomi
 @date: Jan 2021
@@ -8,4 +8,5 @@ Module comprising processing of DVS data files.
 # flake8: noqa
 # isort:skip_file
 
-from .dvsproc import *
+from .graphing import *
+from .python import *
