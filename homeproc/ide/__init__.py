@@ -7,3 +7,5 @@ Module comprising processing of IDE scans.
 # pylint: disable=W0614,W0611,W0622
 # flake8: noqa
 # isort:skip_file
+
+from .ideproc import *
