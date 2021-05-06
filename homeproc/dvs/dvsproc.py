@@ -22,6 +22,7 @@ __all__ = [
     'read_dvs_file',
     'get_change_points',
     'get_change_points_rpt',
+    'get_change_points_rpt_wnd',
     'calc_isotherm_data',
     'trim_meta',
     'get_loading',
@@ -31,7 +32,7 @@ __all__ = [
 ]
 
 LP_BASELINES_PTH = pth.Path(
-    r"~\OneDrive\Documents\Research Documents\Postdoc ICGM\Projects\CNES sensors\Data\General DVS\flow_baseline\baselines"
+    r"~\OneDrive\Documents\Research Documents\Postdoc ICGM\Projects\CNES sensors\Data\DVS\General DVS\flow_baseline\baselines"
 ).expanduser()
 
 important_meta = {
@@ -108,7 +109,18 @@ def trim_meta(meta):
     }
 
 
-def get_change_points_rpt(dvsdata, col, pen=0.5, width=300, **kwargs):
+def get_change_points_rpt(dvsdata, col, pen=0.5, min_size=2, **kwargs):
+
+    datacol = dvsdata[col].fillna(0)
+    algo = rpt.Binseg(model="l2", min_size=min_size,
+                      **kwargs).fit(datacol.values)
+    chpoints = algo.predict(pen=pen)
+    rpt.show.display(datacol.values, chpoints, figsize=(17, 6))
+
+    return chpoints
+
+
+def get_change_points_rpt_wnd(dvsdata, col, pen=0.5, width=300, **kwargs):
 
     datacol = dvsdata[col].fillna(0)
     algo = rpt.Window(model="l1", width=width, **kwargs).fit(datacol.values)
@@ -162,8 +174,8 @@ def get_act_T(dvsdata, tcol):
     return max(dvsdata[tcol])
 
 
-def remove_baseline(iso_points, base_name):
-    base_iso = pg.isotherm_from_csv(LP_BASELINES_PTH / base_name)
+def remove_baseline(iso_points, base_name, folder_path=LP_BASELINES_PTH):
+    base_iso = pg.isotherm_from_csv(pth.Path(folder_path) / base_name)
     base_iso.convert(pressure_unit='torr')
     adj_p = base_iso.loading_at(
         iso_points['pressure'], interpolation_type='slinear', interp_fill=0
@@ -176,10 +188,12 @@ def get_loading(iso_points, m0, c='loading'):
 
 
 def dvs_plot(dvsinfo, dvsdata):
-    return plot_transient(
+    fig = plot_transient(
         dvsdata,
         dvsinfo['col']['mass'],
         dvsinfo['col']['t_heat'],
         dvsinfo['col']['p_abs'],
         dvsinfo['col']['p_abs_tgt'],
     )
+    fig.update_layout(yaxis2_range=[20, 200])  # set T
+    return fig
