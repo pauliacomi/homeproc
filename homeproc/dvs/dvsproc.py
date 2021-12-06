@@ -12,6 +12,7 @@ from itertools import cycle
 import numpy as np
 import pandas as pd
 import pygaps as pg
+import pygaps.parsing as pgp
 import ruptures as rpt
 from dateutil import parser
 from matplotlib import pyplot as plt
@@ -61,9 +62,7 @@ def read_dvs_file(path, offset=20):
             if i > 14:
                 break
 
-    dvsdata = pd.read_csv(
-        path, encoding="cp1252", delimiter="\\t", skiprows=41, engine='python'
-    )
+    dvsdata = pd.read_csv(path, encoding="cp1252", delimiter="\\t", skiprows=41, engine='python')
 
     dvsinfo['columns'] = dict(
         time=dvsdata.columns[0],
@@ -88,32 +87,22 @@ def read_dvs_file(path, offset=20):
     )
 
     file_created = dvsinfo['Raw Data File Created'][:19]
-    file_created = parser.parse(file_created) + datetime.timedelta(
-        seconds=offset
-    )
+    file_created = parser.parse(file_created) + datetime.timedelta(seconds=offset)
 
-    dvsdata = dvsdata.set_index(
-        file_created +
-        pd.to_timedelta(dvsdata[dvsinfo['columns']['time']], unit='min')
-    )
+    dvsdata = dvsdata.set_index(file_created + pd.to_timedelta(dvsdata[dvsinfo['columns']['time']], unit='min'))
     dvsinfo = trim_meta(dvsinfo)
 
     return dvsinfo, dvsdata
 
 
 def trim_meta(meta):
-    return {
-        important_meta[key]: val
-        for key, val in meta.items()
-        if key in important_meta
-    }
+    return {important_meta[key]: val for key, val in meta.items() if key in important_meta}
 
 
 def get_change_points_rpt(dvsdata, col, pen=0.5, min_size=2, **kwargs):
 
     datacol = dvsdata[col].fillna(0)
-    algo = rpt.Binseg(model="l2", min_size=min_size,
-                      **kwargs).fit(datacol.values)
+    algo = rpt.Binseg(model="l2", min_size=min_size, **kwargs).fit(datacol.values)
     chpoints = algo.predict(pen=pen)
     rpt.show.display(datacol.values, chpoints, figsize=(17, 6))
 
@@ -135,6 +124,7 @@ def get_change_points(dvsdata, col, pen=0.5, width=300, **kwargs):
     datacol = dvsdata[col].fillna(0)
     diff = np.diff(datacol, prepend=datacol[0])
     chpoints = np.nonzero(diff)[0]
+    chpoints = np.append(chpoints, [len(datacol) - 1])
 
     fig, ax = plt.subplots(1, figsize=(17, 6))
     ax.plot(range(len(datacol)), datacol)
@@ -145,27 +135,18 @@ def get_change_points(dvsdata, col, pen=0.5, width=300, **kwargs):
     return chpoints
 
 
-def calc_isotherm_data(
-    dvsdata, pcol, mcol, chpoints, extra_cols=None, offspts=10, meanpts=20
-):
+def calc_isotherm_data(dvsdata, pcol, mcol, chpoints, extra_cols=None, offspts=10, meanpts=20):
 
     mean = offspts + meanpts
 
     read_cols = {}
 
-    read_cols['pressure'] = [
-        dvsdata[pcol].iloc[n - mean:n - offspts].mean() for n in chpoints
-    ]
-    read_cols['loading'] = [
-        dvsdata[mcol].iloc[n - mean:n - offspts].mean() for n in chpoints
-    ]
+    read_cols['pressure'] = [dvsdata[pcol].iloc[n - mean:n - offspts].mean() for n in chpoints]
+    read_cols['loading'] = [dvsdata[mcol].iloc[n - mean:n - offspts].mean() for n in chpoints]
 
     if extra_cols:
         for col in extra_cols:
-            read_cols[col] = [
-                dvsdata[col].iloc[n - mean:n - offspts].mean()
-                for n in chpoints
-            ]
+            read_cols[col] = [dvsdata[col].iloc[n - mean:n - offspts].mean() for n in chpoints]
 
     return pd.DataFrame(read_cols)
 
@@ -175,11 +156,9 @@ def get_act_T(dvsdata, tcol):
 
 
 def remove_baseline(iso_points, base_name, folder_path=LP_BASELINES_PTH):
-    base_iso = pg.isotherm_from_csv(pth.Path(folder_path) / base_name)
+    base_iso = pgp.isotherm_from_csv(pth.Path(folder_path) / base_name)
     base_iso.convert(pressure_unit='torr')
-    adj_p = base_iso.loading_at(
-        iso_points['pressure'], interpolation_type='slinear', interp_fill=0
-    )
+    adj_p = base_iso.loading_at(iso_points['pressure'], interpolation_type='slinear', interp_fill=0)
     return iso_points['loading'] - adj_p
 
 

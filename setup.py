@@ -17,9 +17,12 @@ setup(
         'pytest-runner',
     ],
     install_requires=[
-        'numpy',
-        'scipy',
         'pandas',
+        'ruptures',
         'matplotlib',
+        'plotly',
+#        'plotly-orca',
+        'psutil',
+        'tqdm',
     ],
 )
