@@ -28,18 +28,29 @@ FREQ_COL = "Resonance frequency [Hz]"
 WIDTH_COL = "Peak width [Hz]"
 
 
-def read_tracefiles(
-    folder='traces', format=2, f0=9950000, f1=10010000, fc=5001
-):
+def read_tracefiles(folder='traces', format=2, f0=9950000, f1=10010000, fc=5001):
 
-    traces = pd.DataFrame()
+    trace_dfs = []
 
     if format == 2:
         for trace in tqdm(pathlib.Path(folder).glob('*.*')):
             df = pd.read_csv(trace, names=[parser.parse(trace.stem)])
-            traces = pd.concat([traces, df], axis=1)
+            trace_dfs.append(df)
+
+        minpoint = min(df.index.min() for df in trace_dfs)
+        maxpoint = max(df.index.max() for df in trace_dfs)
+        newind = np.linspace(minpoint, maxpoint, 2000)
+
+        for ind, df in enumerate(trace_dfs):
+            df_new = pd.DataFrame(index=newind)
+            df_new.index.name = df.index.name
+            df_new[df.columns[0]] = np.interp(newind, df.index, df[df.columns[0]])
+            trace_dfs[ind] = df_new
+
+        traces = pd.concat(trace_dfs, axis=1)
 
     elif format == 1:
+        traces = pd.DataFrame()
         for trace in tqdm(pathlib.Path(folder).glob('*.*')):
             df = pd.read_csv(trace, names=[trace.name])
             traces[parser.parse(trace.name)] = df[trace.name]
@@ -51,17 +62,13 @@ def read_tracefiles(
 def read_markerfile(file):
 
     if file.endswith(".txt"):
-        markers = pd.read_csv(
-            file, names=['day', 'hour', FREQ_COL], delim_whitespace=True
-        )
+        markers = pd.read_csv(file, names=['day', 'hour', FREQ_COL], delim_whitespace=True)
         markers['time'] = markers['day'] + ' ' + markers['hour']
         markers = markers[['time', FREQ_COL]].set_index(['time'])
         markers.index = pd.to_datetime(markers.index)
 
     elif file.endswith(".csv"):
-        markers = pd.read_csv(
-            file, names=['time', FREQ_COL], index_col='time', parse_dates=True
-        )
+        markers = pd.read_csv(file, names=['time', FREQ_COL], index_col='time', parse_dates=True)
 
     return markers
 
@@ -115,13 +122,7 @@ def plot_qcm(markers, trace_results):
                 line=dict(color="green"),
                 name="trace freq",
             ),
-            go.Scatter(
-                x=trace_results.index,
-                y=trace_results[WIDTH_COL],
-                line=dict(color="red"),
-                name="trace width",
-                yaxis='y2'
-            ),
+            go.Scatter(x=trace_results.index, y=trace_results[WIDTH_COL], line=dict(color="red"), name="trace width", yaxis='y2'),
         ),
         layout=dict(
             template="simple_white",
