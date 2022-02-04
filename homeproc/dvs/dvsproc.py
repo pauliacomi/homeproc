@@ -11,7 +11,6 @@ from itertools import cycle
 
 import numpy as np
 import pandas as pd
-import pygaps as pg
 import pygaps.parsing as pgp
 import ruptures as rpt
 from dateutil import parser
@@ -30,6 +29,7 @@ __all__ = [
     'remove_baseline',
     'get_act_T',
     'dvs_plot',
+    'cols',
 ]
 
 LP_BASELINES_PTH = pth.Path(
@@ -49,6 +49,29 @@ important_meta = {
     "columns": "col"
 }
 
+cols = dict(
+    time=0,
+    mass=1,
+    dmass=2,
+    dmdt=3,
+    t_inc_tgt=4,
+    t_inc=5,
+    t_heat_tgt=6,
+    t_heat=7,
+    p_rel_tgt=8,
+    p_rel=9,
+    p_abs_tgt=10,
+    p_abs=11,
+    p_vac=12,
+    p_low=13,
+    p_high=14,
+    v_flow_tgt=15,
+    v_flow=16,
+    g_flow_tgt=17,
+    g_flow=18,
+    vlv_pos=32
+)
+
 
 def read_dvs_file(path, offset=20):
 
@@ -64,32 +87,14 @@ def read_dvs_file(path, offset=20):
 
     dvsdata = pd.read_csv(path, encoding="cp1252", delimiter="\\t", skiprows=41, engine='python')
 
-    dvsinfo['columns'] = dict(
-        time=dvsdata.columns[0],
-        mass=dvsdata.columns[1],
-        dmass=dvsdata.columns[2],
-        dmdt=dvsdata.columns[3],
-        t_inc_tgt=dvsdata.columns[4],
-        t_inc=dvsdata.columns[5],
-        t_heat_tgt=dvsdata.columns[6],
-        t_heat=dvsdata.columns[7],
-        p_rel_tgt=dvsdata.columns[8],
-        p_rel=dvsdata.columns[9],
-        p_abs_tgt=dvsdata.columns[10],
-        p_abs=dvsdata.columns[11],
-        p_vac=dvsdata.columns[12],
-        p_low=dvsdata.columns[13],
-        p_high=dvsdata.columns[14],
-        v_flow_tgt=dvsdata.columns[15],
-        v_flow=dvsdata.columns[16],
-        g_flow_tgt=dvsdata.columns[17],
-        g_flow=dvsdata.columns[18],
-    )
+    dvsinfo['columns'] = {k: dvsdata.columns[v] for k, v in cols.items()}
 
     file_created = dvsinfo['Raw Data File Created'][:19]
     file_created = parser.parse(file_created) + datetime.timedelta(seconds=offset)
 
-    dvsdata = dvsdata.set_index(file_created + pd.to_timedelta(dvsdata[dvsinfo['columns']['time']], unit='min'))
+    dvsdata = dvsdata.set_index(
+        file_created + pd.to_timedelta(dvsdata[dvsinfo['columns']['time']], unit='min')
+    )
     dvsinfo = trim_meta(dvsinfo)
 
     return dvsinfo, dvsdata

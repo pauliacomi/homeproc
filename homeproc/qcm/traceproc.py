@@ -9,14 +9,15 @@ import pathlib
 
 import numpy as np
 import pandas as pd
+import scipy.signal as sig
 import plotly.graph_objects as go
 from dateutil import parser
-from plotly.subplots import make_subplots
 from scipy.signal import find_peaks, peak_widths
 from tqdm import tqdm
 
 __all__ = [
     'read_tracefiles',
+    'denoise_signal',
     'read_markerfile',
     'calc_tracedata',
     'plot_qcm',
@@ -106,6 +107,10 @@ def calc_tracedata(traces, pwidth=10, pheight=0.1):
     return trace_results
 
 
+def denoise_signal(signal, window=51, order=2):
+    return sig.savgol_filter(signal, window, order)
+
+
 def plot_qcm(markers, trace_results):
 
     return go.Figure(
@@ -122,7 +127,13 @@ def plot_qcm(markers, trace_results):
                 line=dict(color="green"),
                 name="trace freq",
             ),
-            go.Scatter(x=trace_results.index, y=trace_results[WIDTH_COL], line=dict(color="red"), name="trace width", yaxis='y2'),
+            go.Scatter(
+                x=trace_results.index,
+                y=trace_results[WIDTH_COL],
+                line=dict(color="red"),
+                name="trace width",
+                yaxis='y2'
+            ),
         ),
         layout=dict(
             template="simple_white",
