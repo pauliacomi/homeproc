@@ -74,8 +74,9 @@ cols = dict(
 
 
 def read_dvs_file(path, offset=20):
+    """Read a DVS 'txt' file and return its metadata and data."""
 
-    with open(path) as f:
+    with open(path, encoding="cp1252") as f:
         f.readline()
 
         dvsinfo = {}
