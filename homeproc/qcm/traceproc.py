@@ -30,6 +30,7 @@ WIDTH_COL = "Peak width [Hz]"
 
 
 def read_tracefiles(folder='traces', format=2, f0=9950000, f1=10010000, fc=5001):
+    """Read all tracefiles and concatenate them in a single dataframe."""
 
     trace_dfs = []
 
@@ -61,6 +62,7 @@ def read_tracefiles(folder='traces', format=2, f0=9950000, f1=10010000, fc=5001)
 
 
 def read_markerfile(file):
+    """Read the resonance frequency from a marker file."""
 
     if file.endswith(".txt"):
         markers = pd.read_csv(file, names=['day', 'hour', FREQ_COL], delim_whitespace=True)
@@ -75,6 +77,7 @@ def read_markerfile(file):
 
 
 def calc_tracedata(traces, pwidth=10, pheight=0.1):
+    """Calculate resonance frequency and peak width from traces"""
 
     timestamps = []
     maxima = []
@@ -108,11 +111,12 @@ def calc_tracedata(traces, pwidth=10, pheight=0.1):
 
 
 def denoise_signal(signal, window=51, order=2):
+    """Smooth data using a savitzky-golay filter"""
     return sig.savgol_filter(signal, window, order)
 
 
 def plot_qcm(markers, trace_results):
-
+    """Plot the QCM data (frequency and width) from the markers and traces."""
     return go.Figure(
         data=(
             go.Scatter(
