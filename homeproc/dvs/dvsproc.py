@@ -30,9 +30,12 @@ __all__ = [
     'cols',
 ]
 
-LP_BASELINES_PTH = pth.Path(
-    r"~\OneDrive\Documents\Research Documents\Postdoc ICGM\Projects\CNES sensors\Data\DVS\General DVS\flow_baseline\baselines"
-).expanduser()
+try:
+    LP_BASELINES_PTH = pth.Path(
+        r"~\OneDrive\Documents\Research Documents\Postdoc ICGM\Projects\CNES sensors\Data\DVS\General DVS\flow_baseline\baselines"
+    ).expanduser()
+except:
+    LP_BASELINES_PTH = ""
 
 important_meta = {
     "Method Name": "dvs_method_name",
