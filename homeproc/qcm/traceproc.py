@@ -105,7 +105,7 @@ def calc_tracedata(traces, pwidth=10, pheight=0.1):
             WIDTH_COL: widths
         },
         index=timestamps,
-    )
+    ).sort_index()
 
     return trace_results
 
