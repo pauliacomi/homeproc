@@ -15,6 +15,7 @@ __all__ = [
 import re
 from dateutil import parser
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -22,6 +23,7 @@ from matplotlib import cm
 
 
 def read_novo_file(path: str):
+    """Read a Novocontrol output file."""
 
     with open(path) as f:
         name, date, time = map(str.strip, f.readline().split(","))
@@ -47,7 +49,7 @@ def read_novo_file(path: str):
         "sample_name": name,
         "frequencies": freqs,
         "start_time": start,
-        "col": novo.columns.to_list(),
+        "parameters": novo.columns.to_list(),
     }
 
     return novoinfo, novo
@@ -61,6 +63,7 @@ def plot_time_column(
     dvs_col=None,
     scale='log',
 ):
+    """Plot an interactive graph of variables as a function of time."""
 
     fig = go.Figure(
         layout=dict(
@@ -94,14 +97,12 @@ def plot_time_column(
         ))
 
     if dvs_data is not None:
-        fig.update_layout(
-            yaxis2=dict(
-                title=dvs_col,
-                anchor="x",
-                overlaying="y",
-                side="right",
-            ),
-        )
+        fig.update_layout(yaxis2=dict(
+            title=dvs_col,
+            anchor="x",
+            overlaying="y",
+            side="right",
+        ), )
         fig.add_trace(
             go.Scatter(
                 x=dvs_data.index,
@@ -123,13 +124,13 @@ def find_previous_scan(data, time_before):
     return scan
 
 
-def plot_param_freq(datas, parameter):
+def plot_param_freq(datas, parameter, pressure):
+    """Plot a parameter as a function of frequency."""
 
-    colmap = cm.get_cmap('RdPu', len(datas.index))
-    colours = [
-        f"rgba({c[0]},{c[1]},{c[2]},{c[3]})"
-        for c in colmap(datas.index / datas.index.max())
-    ]
+    pressure = np.asarray(pressure)
+
+    colmap = cm.get_cmap('RdPu', len(pressure))
+    colours = [f"rgba({c[0]},{c[1]},{c[2]},{c[3]})" for c in colmap(pressure / max(pressure))]
 
     fig = go.Figure(
         layout=dict(
@@ -150,15 +151,14 @@ def plot_param_freq(datas, parameter):
         )
     )
 
-    for pres, col in zip(datas.index, colours):
-
+    for ind, pres, col in zip(range(len(pressure)), pressure, colours):
         fig.add_trace(
             go.Scatter(
                 x=datas.columns,
-                y=datas.loc[pres],
+                y=datas.iloc[ind],
                 name=f"{pres:.2f}",
-                line=dict(color=col, )
-            )
+                line={"color": col},
+            ),
         )
 
     return fig
