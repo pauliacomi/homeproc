@@ -144,12 +144,14 @@ def get_change_points(
     method="window",
     pen=0.5,
     width=300,
-    min_size=2,
+    log=False,
     **kwargs,
 ):
     """Find the change points in a data series (usually pressure)."""
 
     datacol = dvsdata[col].fillna(0)
+    if log:
+        datacol = np.log10(datacol)
 
     if method == "derivative":
         datacol = dvsdata[col].fillna(0)
@@ -169,7 +171,7 @@ def get_change_points(
         rpt.show.display(datacol.values, chpoints, figsize=(17, 6))
 
     elif method == "binary_segment":
-        algo = rpt.Binseg(model="l2", min_size=min_size, **kwargs).fit(datacol.values)
+        algo = rpt.Binseg(model="l2", min_size=width, **kwargs).fit(datacol.values)
         chpoints = algo.predict(pen=pen)
         rpt.show.display(datacol.values, chpoints, figsize=(17, 6))
 
