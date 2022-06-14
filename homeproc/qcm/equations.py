@@ -11,7 +11,7 @@ rho = 2.648  # quartz density, g/cm3
 mu = 2.947e11  # shear modulus AT cut g /cm /s2
 
 
-@functools.cache
+@functools.lru_cache
 def area(de):
     """electrode area, cm2"""
     return math.pi * (de / 2)**2
