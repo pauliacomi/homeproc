@@ -29,35 +29,30 @@ FREQ_COL = "Resonance frequency [Hz]"
 WIDTH_COL = "Peak width [Hz]"
 
 
-def read_tracefiles(folder='traces', format=2, f0=9950000, f1=10010000, fc=5001):
+def read_tracefiles(folder='traces', format=2, minpoint=None, maxpoint=None, npoints=2000):
     """Read all tracefiles and concatenate them in a single dataframe."""
-
     trace_dfs = []
-
     if format == 2:
         for trace in tqdm(pathlib.Path(folder).glob('*.*')):
             df = pd.read_csv(trace, names=[parser.parse(trace.stem)])
             trace_dfs.append(df)
-
-        minpoint = min(df.index.min() for df in trace_dfs)
-        maxpoint = max(df.index.max() for df in trace_dfs)
-        newind = np.linspace(minpoint, maxpoint, 2000)
-
+        if not minpoint:
+            minpoint = min(df.index.min() for df in trace_dfs)
+        if not maxpoint:
+            maxpoint = max(df.index.max() for df in trace_dfs)
+        newind = np.linspace(minpoint, maxpoint, npoints)
         for ind, df in enumerate(trace_dfs):
             df_new = pd.DataFrame(index=newind)
             df_new.index.name = df.index.name
             df_new[df.columns[0]] = np.interp(newind, df.index, df[df.columns[0]])
             trace_dfs[ind] = df_new
-
         traces = pd.concat(trace_dfs, axis=1)
-
     elif format == 1:
         traces = pd.DataFrame()
         for trace in tqdm(pathlib.Path(folder).glob('*.*')):
             df = pd.read_csv(trace, names=[trace.name])
             traces[parser.parse(trace.name)] = df[trace.name]
-        traces = traces.set_index(np.linspace(f0, f1, fc))
-
+        traces = traces.set_index(np.linspace(minpoint, maxpoint, npoints))
     return traces
 
 
